@@ -52,7 +52,7 @@
         const issues = await fetchAllIssues();
         allProducts = issues.map(issue => ({
             title: issue.title,
-            body: cleanBody(issue.body), // 清理 Markdown 文本，去除 "来源:"
+            body: cleanBody(issue.body),
             images: extractImages(issue.body),
             category: extractCategory(issue.body)
         }));
@@ -75,7 +75,7 @@
         return text
             .split("\n") // 按行拆分
             .map(line => line.trim()) // 去除前后空格
-            .filter(line => !/^来源[:：]/.test(line)) // 过滤 "来源:" 或 "来源："
+            .filter(line => !/^\*\*来源\*\*[:：]/.test(line)) // 过滤 "**来源**: " 或 "**来源**：" 行
             .join("\n"); // 重新拼接成 Markdown 文本
     }
 
