@@ -10,13 +10,9 @@
         .product { border: 1px solid #ddd; padding: 10px; margin: 10px; border-radius: 5px; }
         .product img { max-width: 100%; height: auto; display: block; margin-top: 10px; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    document.querySelectorAll("a[href*='github.com/user-attachments/assets']").forEach(el => el.remove());
-});
-</script>
-    <body>
+<body>
     <h1>商品列表</h1>
     <input type="text" id="searchBox" placeholder="输入关键词搜索..." oninput="filterProducts()">
     <select id="categoryFilter" onchange="filterProducts()">
@@ -28,9 +24,11 @@ document.addEventListener("DOMContentLoaded", function() {
         <option value="其他">其他</option>
     </select>
     <div id="productList"></div>
+
     <script>
     let allProducts = [];
     const repoName = window.location.hostname.includes("high-version") ? "high-version" : "special-offer";
+
     async function fetchAllIssues() {
         let allIssues = [];
         let page = 1;
@@ -68,7 +66,9 @@ document.addEventListener("DOMContentLoaded", function() {
     
     function extractImages(text) {
         const matches = [...text.matchAll(/!\[.*?\]\((.*?)\)/g)];
-        return matches.map(match => match[1]);
+        return matches
+            .map(match => match[1])
+            .filter(url => !url.includes("github.com/user-attachments/assets")); // 过滤 GitHub 内部链接
     }
 
     function displayProducts(products) {
@@ -77,8 +77,17 @@ document.addEventListener("DOMContentLoaded", function() {
         products.forEach(product => {
             let div = document.createElement("div");
             div.className = "product";
-            let imagesHTML = product.images.map(img => `<img src="${img}" alt="商品图片">`).join("");
-            div.innerHTML = `<h3>${product.title}</h3><p>${product.body.replace(/\n/g, "<br>")}</p><b>分类:</b> ${product.category} <br>${imagesHTML}`;
+
+            let imagesHTML = product.images.length > 0 
+                ? product.images.map(img => `<img src="${img}" alt="商品图片">`).join("")
+                : "<p>暂无图片</p>";
+
+            div.innerHTML = `
+                <h3>${product.title}</h3>
+                <p>${marked.parse(product.body)}</p> <!-- 解析 Markdown -->
+                <b>分类:</b> ${product.category} <br>
+                ${imagesHTML}
+            `;
             productList.appendChild(div);
         });
     }
@@ -96,6 +105,7 @@ document.addEventListener("DOMContentLoaded", function() {
         });
         displayProducts(filtered);
     }
+
     fetchProducts();
     </script>
 </body>
