@@ -78,8 +78,11 @@
             let div = document.createElement("div");
             div.className = "product";
 
-            // 过滤掉“来源”信息
-            let filteredBody = product.body.replace(/\*\*来源\*\*: .*?\n?/g, "");
+            // 过滤掉 "来源:" 开头的行
+            let filteredBody = product.body
+                .split("\n") // 按行分割
+                .filter(line => !line.startsWith("来源:")) // 过滤掉包含 "来源:" 的行
+                .join("\n"); // 重新拼接
 
             let imagesHTML = product.images.length > 0 
                 ? product.images.map(img => `<img src="${img}" alt="商品图片">`).join("")
