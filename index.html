@@ -78,13 +78,16 @@
             let div = document.createElement("div");
             div.className = "product";
 
+            // 过滤掉“来源”信息
+            let filteredBody = product.body.replace(/\*\*来源\*\*: .*?\n?/g, "");
+
             let imagesHTML = product.images.length > 0 
                 ? product.images.map(img => `<img src="${img}" alt="商品图片">`).join("")
                 : "<p>暂无图片</p>";
 
             div.innerHTML = `
                 <h3>${product.title}</h3>
-                <p>${marked.parse(product.body)}</p> <!-- 解析 Markdown -->
+                <p>${marked.parse(filteredBody)}</p> <!-- 解析 Markdown -->
                 <b>分类:</b> ${product.category} <br>
                 ${imagesHTML}
             `;
