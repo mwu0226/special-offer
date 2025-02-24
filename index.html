@@ -72,17 +72,33 @@
     }
 
     function displayProducts(products) {
-        let productList = document.getElementById("productList");
-        productList.innerHTML = "";
-        products.forEach(product => {
-            let div = document.createElement("div");
-            div.className = "product";
+    let productList = document.getElementById("productList");
+    productList.innerHTML = "";
+    products.forEach(product => {
+        let div = document.createElement("div");
+        div.className = "product";
 
-            // 过滤掉 "来源:" 开头的行
-            let filteredBody = product.body
-                .split("\n") // 按行分割
-                .filter(line => !line.startsWith("来源:")) // 过滤掉包含 "来源:" 的行
-                .join("\n"); // 重新拼接
+        // 过滤掉 "来源:" 这行
+        let filteredBody = product.body
+            .split("\n") // 按行拆分
+            .map(line => line.trim()) // 移除前后空格
+            .filter(line => !/^来源[:：]/.test(line)) // 过滤掉 "来源:" 或 "来源：" 开头的行
+            .join("\n"); // 重新拼接为文本
+
+        let imagesHTML = product.images.length > 0 
+            ? product.images.map(img => `<img src="${img}" alt="商品图片">`).join("")
+            : "<p>暂无图片</p>";
+
+        div.innerHTML = `
+            <h3>${product.title}</h3>
+            <p>${marked.parse(filteredBody)}</p> <!-- 解析 Markdown -->
+            <b>分类:</b> ${product.category} <br>
+            ${imagesHTML}
+        `;
+        productList.appendChild(div);
+    });
+}
+
 
             let imagesHTML = product.images.length > 0 
                 ? product.images.map(img => `<img src="${img}" alt="商品图片">`).join("")
