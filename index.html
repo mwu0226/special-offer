@@ -52,7 +52,7 @@
         const issues = await fetchAllIssues();
         allProducts = issues.map(issue => ({
             title: issue.title,
-            body: issue.body,
+            body: cleanBody(issue.body), // 清理 Markdown 文本，去除 "来源:"
             images: extractImages(issue.body),
             category: extractCategory(issue.body)
         }));
@@ -71,34 +71,20 @@
             .filter(url => !url.includes("github.com/user-attachments/assets")); // 过滤 GitHub 内部链接
     }
 
-    function displayProducts(products) {
-    let productList = document.getElementById("productList");
-    productList.innerHTML = "";
-    products.forEach(product => {
-        let div = document.createElement("div");
-        div.className = "product";
-
-        // 过滤掉 "来源:" 这行
-        let filteredBody = product.body
+    function cleanBody(text) {
+        return text
             .split("\n") // 按行拆分
-            .map(line => line.trim()) // 移除前后空格
-            .filter(line => !/^来源[:：]/.test(line)) // 过滤掉 "来源:" 或 "来源：" 开头的行
-            .join("\n"); // 重新拼接为文本
+            .map(line => line.trim()) // 去除前后空格
+            .filter(line => !/^来源[:：]/.test(line)) // 过滤 "来源:" 或 "来源："
+            .join("\n"); // 重新拼接成 Markdown 文本
+    }
 
-        let imagesHTML = product.images.length > 0 
-            ? product.images.map(img => `<img src="${img}" alt="商品图片">`).join("")
-            : "<p>暂无图片</p>";
-
-        div.innerHTML = `
-            <h3>${product.title}</h3>
-            <p>${marked.parse(filteredBody)}</p> <!-- 解析 Markdown -->
-            <b>分类:</b> ${product.category} <br>
-            ${imagesHTML}
-        `;
-        productList.appendChild(div);
-    });
-}
-
+    function displayProducts(products) {
+        let productList = document.getElementById("productList");
+        productList.innerHTML = "";
+        products.forEach(product => {
+            let div = document.createElement("div");
+            div.className = "product";
 
             let imagesHTML = product.images.length > 0 
                 ? product.images.map(img => `<img src="${img}" alt="商品图片">`).join("")
@@ -106,7 +92,7 @@
 
             div.innerHTML = `
                 <h3>${product.title}</h3>
-                <p>${marked.parse(filteredBody)}</p> <!-- 解析 Markdown -->
+                <p>${marked.parse(product.body)}</p> <!-- 解析 Markdown -->
                 <b>分类:</b> ${product.category} <br>
                 ${imagesHTML}
             `;
