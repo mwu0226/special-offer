@@ -5,28 +5,110 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>商品展示</title>
     <style>
-        body { font-family: Arial, sans-serif; }
-        #searchBox { margin-bottom: 20px; }
-        .product { border: 1px solid #ddd; padding: 10px; margin: 10px; border-radius: 5px; }
-        .product img { max-width: 100%; height: auto; display: block; margin-top: 10px; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0;
+            padding: 0;
+            background-color: #f8f8f8;
+        }
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input, select {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        /* 主要优化：网格布局 */
+        #productList {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            justify-items: center;
+        }
+        .product {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            text-align: center;
+            padding: 15px;
+            transition: transform 0.3s;
+        }
+        .product:hover {
+            transform: translateY(-5px);
+        }
+        .product img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover; /* 确保图片尺寸统一 */
+            border-radius: 5px;
+            transition: transform 0.3s;
+        }
+        .product img:hover {
+            transform: scale(1.05);
+        }
+        .product h3 {
+            font-size: 18px;
+            color: #333;
+            margin: 10px 0;
+        }
+        .product p {
+            font-size: 14px;
+            color: #666;
+            text-align: left;
+            padding: 0 10px;
+        }
+        .category {
+            font-size: 14px;
+            color: #007BFF;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        @media (max-width: 600px) {
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            input, select {
+                width: 80%;
+            }
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-    <h1>商品列表</h1>
-    <input type="text" id="searchBox" placeholder="输入关键词搜索..." oninput="filterProducts()">
-    <select id="categoryFilter" onchange="filterProducts()">
-        <option value="">所有类别</option>
-        <option value="买家秀">买家秀</option>
-        <option value="鞋子">鞋子</option>
-        <option value="衣服">衣服</option>
-        <option value="饰品">饰品</option>
-        <option value="包包">包包</option>
-        <option value="其他">其他</option>
-    </select>
-    <div id="productList"></div>
 
-    <script>
+<div class="container">
+    <h1>商品展示</h1>
+    <div class="controls">
+        <input type="text" id="searchBox" placeholder="输入关键词搜索..." oninput="filterProducts()">
+        <select id="categoryFilter" onchange="filterProducts()">
+            <option value="">所有类别</option>
+            <option value="买家秀">买家秀</option>
+            <option value="莆田鞋">莆田鞋</option>
+            <option value="广顶级包">广顶级包</option>
+            <option value="辽高版包">辽高版包</option>
+            <option value="其他">其他</option>
+        </select>
+    </div>
+    <div id="productList"></div>
+</div>
+
+<script>
     let allProducts = [];
     const repoName = window.location.hostname.includes("high-version") ? "high-version" : "special-offer";
 
@@ -37,12 +119,20 @@
         let hasMoreData = true;
 
         while (hasMoreData) {
-            const response = await fetch(`https://api.github.com/repos/mwu0226/${repoName}/issues?per_page=${perPage}&page=${page}`);
-            const issues = await response.json();
-            if (issues.length > 0) {
-                allIssues = allIssues.concat(issues);
-                page++;
-            } else {
+            try {
+                const response = await fetch(`https://api.github.com/repos/mwu0226/${repoName}/issues?per_page=${perPage}&page=${page}`);
+                if (!response.ok) throw new Error(`GitHub API 请求失败: ${response.status}`);
+                
+                const issues = await response.json();
+                if (issues.length > 0) {
+                    allIssues = allIssues.concat(issues);
+                    page++;
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // 避免 GitHub API 速率限制
+                } else {
+                    hasMoreData = false;
+                }
+            } catch (error) {
+                console.error("获取 Issues 失败:", error);
                 hasMoreData = false;
             }
         }
@@ -57,6 +147,8 @@
             images: extractImages(issue.body),
             category: extractCategory(issue.body)
         }));
+
+        console.log("获取到的商品:", allProducts);
         displayProducts(allProducts);
     }
 
@@ -64,37 +156,39 @@
         const match = text.match(/\*\*分类\*\*: (.*)/);
         return match ? match[1].trim() : "未分类";
     }
-    
+
     function extractImages(text) {
         const matches = [...text.matchAll(/!\[.*?\]\((.*?)\)/g)];
         return matches
             .map(match => match[1])
-            .filter(url => !url.includes("github.com/user-attachments/assets")); // 过滤 GitHub 内部链接
+            .filter(url => !url.includes("github.com/user-attachments/assets")); // 过滤 GitHub 内部图片
     }
 
     function cleanBody(text) {
+        if (!text) return "无商品描述";
         return text
-            .split("\n") // 按行拆分
-            .map(line => line.trim()) // 去除前后空格
-            .filter(line => !/^\*\*来源\*\*[:：]/.test(line)) // 过滤 "**来源**: " 或 "**来源**：" 行
-            .join("\n"); // 重新拼接成 Markdown 文本
+            .split("\n")
+            .map(line => line.trim())
+            .filter(line => !/^\*\*来源\*\*[:：]/.test(line))
+            .join("\n");
     }
 
     function displayProducts(products) {
         let productList = document.getElementById("productList");
         productList.innerHTML = "";
+
         products.forEach(product => {
             let div = document.createElement("div");
             div.className = "product";
 
-            let imagesHTML = product.images.length > 0 
+            let imagesHTML = product.images.length > 0
                 ? product.images.map(img => `<img src="${img}" alt="商品图片">`).join("")
                 : "<p>图片加载中</p>";
 
             div.innerHTML = `
                 <h3>${product.title}</h3>
-                <p>${marked.parse(product.body)}</p> <!-- 解析 Markdown -->
-                <b>分类:</b> ${product.category} <br>
+                <p>${marked.parse(product.body)}</p>
+                <span class="category">${product.category}</span>
                 ${imagesHTML}
             `;
             productList.appendChild(div);
@@ -116,6 +210,7 @@
     }
 
     fetchProducts();
-    </script>
+</script>
+
 </body>
 </html>
